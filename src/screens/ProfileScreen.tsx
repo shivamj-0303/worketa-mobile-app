@@ -78,7 +78,7 @@ export function ProfileScreen({ user, onLogout }: { user: AuthUser; onLogout: ()
         <InfoRow label="Employee code" value={profile?.employeeCode || 'Not available'} />
         <InfoRow label="Employee type" value={profile?.type || 'Not available'} />
         <InfoRow label="Phone" value={profile?.phone || 'Not available'} />
-        <InfoRow label="Daily wage" value={profile?.dailyWage != null ? formatCurrency(profile.dailyWage) : 'Not available'} />
+        <InfoRow label="Monthly salary" value={profile?.monthlySalary != null ? formatCurrency(profile.monthlySalary) : 'Not available'} />
         <InfoRow label="Joining date" value={profile?.joiningDate ? formatDisplayDate(profile.joiningDate) : 'Not available'} />
       </SectionCard>
 

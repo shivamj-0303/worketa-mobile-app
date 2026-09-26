@@ -39,9 +39,9 @@ export function DashboardScreen({ user }: { user: AuthUser }) {
   if (loading) return <Screen><LoadingView label="Loading your dashboard…" /></Screen>;
   if (error && !summary) return <Screen><ErrorView message={error} onRetry={() => load()} /></Screen>;
 
-  const present = summary?.requestedPresentDays ?? summary?.presentDays ?? 0;
-  const absent = summary?.requestedAbsentDays ?? summary?.absentDays ?? 0;
-  const doubled = summary?.requestedDoubledDays ?? summary?.doubledDays ?? 0;
+  const present = summary?.presentDays ?? 0;
+  const absent = summary?.absentDays ?? 0;
+  const doubled = summary?.doubledDays ?? 0;
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => load(true)}>
@@ -59,9 +59,9 @@ export function DashboardScreen({ user }: { user: AuthUser }) {
       <View style={styles.grid}>
         <StatCard label="Present days" value={String(present)} tone="green" />
         <StatCard label="Absent days" value={String(absent)} tone="red" />
-        <StatCard label="Daily wage" value={formatCurrency(summary?.dailyWage)} tone="blue" />
-        <StatCard label="Bonus" value={formatCurrency(summary?.requestedBonusAmount ?? summary?.bonusAmount)} tone="amber" />
-        <StatCard label="Advance" value={formatCurrency(summary?.requestedAdvanceAmount ?? summary?.advanceDeduction)} tone="purple" />
+        <StatCard label="Monthly salary" value={formatCurrency(summary?.monthlySalary)} tone="blue" />
+        <StatCard label="Bonus" value={formatCurrency(summary?.bonusAmount)} tone="amber" />
+        <StatCard label="Advance" value={formatCurrency(summary?.advanceDeduction)} tone="purple" />
         <StatCard label="Double days" value={String(doubled)} tone="teal" />
       </View>
 

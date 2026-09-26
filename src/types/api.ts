@@ -18,7 +18,9 @@ export interface EmployeeSummary {
   employeeName: string;
   periodStart: string;
   periodEnd: string;
-  dailyWage: number;
+  monthlySalary: number;
+  absentDeductionPerDay: number;
+  absenceDeduction?: number;
   presentDays: number;
   doubledDays: number;
   absentDays: number;
@@ -70,7 +72,8 @@ export interface EmployeeProfile {
   employeeCode?: string;
   type?: string;
   joiningDate?: string;
-  dailyWage?: number;
+  monthlySalary?: number;
+  absentDeductionPerDay?: number;
   active?: boolean;
 }
 

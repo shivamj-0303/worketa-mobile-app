@@ -58,8 +58,11 @@ export function AttendanceScreen({ user }: { user: AuthUser }) {
   };
 
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-  const firstDay = new Date(month.getFullYear(), month.getMonth(), 1).getDay();
-  const calendar = Array.from({ length: firstDay + daysInMonth }, (_, i) => i < firstDay ? null : i - firstDay + 1);
+  const firstDayValue = new Date(month.getFullYear(), month.getMonth(), 1).getDay();
+  const firstDay = firstDayValue === 0 ? 0 : firstDayValue - 1;
+  const businessDays = Array.from({ length: daysInMonth }, (_, index) => index + 1)
+    .filter((day) => new Date(month.getFullYear(), month.getMonth(), day).getDay() !== 0);
+  const calendar = Array.from({ length: firstDay + businessDays.length }, (_, i) => i < firstDay ? null : businessDays[i - firstDay]);
   const byDate = attendance.reduce<Record<string, AttendanceRecord>>((map, record) => {
     map[record.attendanceDate] = record;
     return map;
@@ -88,7 +91,7 @@ export function AttendanceScreen({ user }: { user: AuthUser }) {
           <Text style={styles.monthTitle}>{formatMonth(month)}</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Next month" onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} style={styles.monthArrow}><Text style={styles.arrow}>›</Text></Pressable>
         </View>
-        <View style={styles.weekRow}>{['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => <Text key={`${day}-${i}`} style={styles.weekDay}>{day}</Text>)}</View>
+        <View style={styles.weekRow}>{['M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => <Text key={`${day}-${i}`} style={styles.weekDay}>{day}</Text>)}</View>
         <View style={styles.calendar}>{calendar.map((day, index) => {
           const date = day ? `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : '';
           const record = date ? byDate[date] : undefined;
@@ -179,9 +182,9 @@ const styles = StyleSheet.create({
   arrow: { color: colors.primary, fontSize: 28, lineHeight: 30 },
   monthTitle: { color: colors.text, ...typography.h3 },
   weekRow: { flexDirection: 'row', marginBottom: spacing.xs },
-  weekDay: { width: '14.28%', textAlign: 'center', color: colors.textTertiary, ...typography.caption, fontWeight: '800' },
+  weekDay: { width: '16.66%', textAlign: 'center', color: colors.textTertiary, ...typography.caption, fontWeight: '800' },
   calendar: { flexDirection: 'row', flexWrap: 'wrap' },
-  day: { width: '14.28%', aspectRatio: 0.92, alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginBottom: 4 },
+  day: { width: '16.66%', aspectRatio: 0.92, alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginBottom: 4 },
   approved: {
     backgroundColor: colors.successSoft,
   },

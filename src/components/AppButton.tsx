@@ -39,19 +39,21 @@ export function AppButton({
       style={({ pressed }) => [
         styles.base,
         styles[variant],
+        isDisabled && variant === 'primary' && styles.primaryDisabled,
+        isDisabled && variant === 'secondary' && styles.secondaryDisabled,
+        isDisabled && variant === 'danger' && styles.dangerDisabled,
         pressed && !isDisabled && styles.pressed,
-        isDisabled && styles.disabled,
         style,
       ]}
     >
       {loading ? (
         <ActivityIndicator
           color={
-            variant === 'secondary'
-              ? colors.primary
-              : variant === 'ghost'
-                ? colors.primary
-                : colors.white
+            variant === 'primary'
+              ? colors.white
+              : variant === 'danger'
+                ? colors.white
+                : colors.primary
           }
         />
       ) : (
@@ -60,7 +62,11 @@ export function AppButton({
             styles.label,
             variant === 'secondary' && styles.secondaryLabel,
             variant === 'ghost' && styles.ghostLabel,
-            isDisabled && styles.disabledLabel,
+            isDisabled && variant === 'primary' && styles.primaryDisabledLabel,
+            isDisabled &&
+              variant === 'secondary' &&
+              styles.secondaryDisabledLabel,
+            isDisabled && variant === 'danger' && styles.dangerDisabledLabel,
           ]}
         >
           {label}
@@ -100,7 +106,6 @@ const styles = StyleSheet.create({
   label: {
     color: colors.white,
     ...typography.bodyMedium,
-    textAlign: 'center',
   },
 
   secondaryLabel: {
@@ -111,16 +116,33 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
 
-  disabledLabel: {
+  primaryDisabled: {
+    backgroundColor: colors.primarySoft,
+  },
+
+  primaryDisabledLabel: {
+    color: colors.primaryDark,
+  },
+
+  secondaryDisabled: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+  },
+
+  secondaryDisabledLabel: {
     color: colors.textSecondary,
+  },
+
+  dangerDisabled: {
+    backgroundColor: colors.dangerSoft,
+  },
+
+  dangerDisabledLabel: {
+    color: colors.danger,
   },
 
   pressed: {
     opacity: 0.82,
     transform: [{ scale: 0.99 }],
-  },
-
-  disabled: {
-    opacity: 1,
   },
 });

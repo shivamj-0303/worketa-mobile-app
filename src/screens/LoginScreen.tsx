@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppButton } from '../components/AppButton';
 import { Field } from '../components/Field';
@@ -63,31 +63,87 @@ export function LoginScreen({ onLogin }: { onLogin: (user: AuthUser) => void }) 
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.brand}>
-          <View style={styles.logo}><Text style={styles.logoText}>W</Text></View>
-          <Text style={styles.appName}>Worketa</Text>
-          <Text style={styles.tagline}>Employee portal</Text>
-        </View>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.brand}>
+            <View style={styles.logo}>
+              <Text style={styles.logoText}>W</Text>
+            </View>
 
-        <View style={[styles.card, shadow]}>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Sign in to manage your attendance, advances and payroll.</Text>
+            <Text style={styles.appName}>Worketa</Text>
+            <Text style={styles.tagline}>Employee portal</Text>
+          </View>
 
-          <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" textContentType="emailAddress" editable={!loading} placeholder="you@example.com" onSubmitEditing={handleLogin} returnKeyType="next" />
-          <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry textContentType="password" editable={!loading} placeholder="Enter your password" onSubmitEditing={handleLogin} returnKeyType="done" />
+          <View style={[styles.card, shadow]}>
+            <Text style={styles.title}>Welcome back</Text>
 
-          {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-          <AppButton label="Sign in" onPress={handleLogin} loading={loading} style={styles.button} />
-        </View>
+            <Text style={styles.subtitle}>
+              Sign in to manage your attendance, advances and payroll.
+            </Text>
 
-        <Text style={styles.footer}>Your session is securely stored on this device.</Text>
+            <Field
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              editable={!loading}
+              placeholder="you@example.com"
+              onSubmitEditing={handleLogin}
+              returnKeyType="next"
+            />
+
+            <Field
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              textContentType="password"
+              editable={!loading}
+              placeholder="Enter your password"
+              onSubmitEditing={handleLogin}
+              returnKeyType="done"
+            />
+
+            {error ? (
+              <Text accessibilityRole="alert" style={styles.error}>
+                {error}
+              </Text>
+            ) : null}
+
+            <AppButton
+              label="Sign in"
+              onPress={handleLogin}
+              loading={loading}
+              style={styles.button}
+            />
+          </View>
+
+          <Text style={styles.footer}>
+            Your session is securely stored on this device.
+          </Text>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: spacing.xl,
+  },
   safe: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1, justifyContent: 'center', padding: spacing.xl },
   brand: { alignItems: 'center', marginBottom: spacing.xxl },
