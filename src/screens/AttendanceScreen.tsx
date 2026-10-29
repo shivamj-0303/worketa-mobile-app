@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { Screen, SectionCard } from '../components/Screen';
@@ -6,7 +7,7 @@ import { LoadingView, ErrorView, EmptyView } from '../components/StateView';
 import { StatusBadge } from '../components/StatusBadge';
 import { colors, radius, spacing, typography } from '../theme';
 import { apiRequest } from '../services/api';
-import { AttendanceRecord, AuthUser } from '../types/api';
+import { AttendanceRecord, AttendanceType, AuthUser } from '../types/api';
 import { formatDisplayDate, formatMonth, getBusinessDate, getMonthKey, isDoubleRequestWindow } from '../utils/date';
 
 export function AttendanceScreen({ user }: { user: AuthUser }) {
@@ -16,6 +17,9 @@ export function AttendanceScreen({ user }: { user: AuthUser }) {
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState<'PRESENT' | 'WORKED_DOUBLE' | null>(null);
   const [error, setError] = useState('');
+  const [attempts, setAttempts] = useState<Record<string, AttendanceType[]>>({});
+  const [attemptsLoaded, setAttemptsLoaded] = useState(false);
+  const attemptsStorageKey = `worketa.attendanceAttempts.${user.id}`;
 
   const currentBusinessDate = getBusinessDate();
   const currentBusinessDateObj = useMemo(() => new Date(`${currentBusinessDate}T12:00:00`), [currentBusinessDate]);
@@ -36,15 +40,40 @@ export function AttendanceScreen({ user }: { user: AuthUser }) {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    let active = true;
+    AsyncStorage.getItem(attemptsStorageKey)
+      .then((stored) => {
+        if (!active) return;
+        try {
+          setAttempts(stored ? JSON.parse(stored) as Record<string, AttendanceType[]> : {});
+        } catch {
+          setAttempts({});
+        }
+      })
+      .finally(() => {
+        if (active) setAttemptsLoaded(true);
+      });
+    return () => { active = false; };
+  }, [attemptsStorageKey]);
+
+  const rememberAttempt = async (date: string, type: AttendanceType) => {
+    const nextForDate = Array.from(new Set([...(attempts[date] || []), type]));
+    const next = { ...attempts, [date]: nextForDate };
+    setAttempts(next);
+    await AsyncStorage.setItem(attemptsStorageKey, JSON.stringify(next));
+  };
+
   const submit = async (type: 'PRESENT' | 'WORKED_DOUBLE') => {
     if (!isCurrentMonth) return;
     const todaysRecords = attendance.filter((item) => item.attendanceDate === currentBusinessDate);
     const existingRecord = todaysRecords.find((item) => item.type === type);
-    if (existingRecord) {
-      setError(`${type === 'WORKED_DOUBLE' ? 'Double' : 'Present'} attendance for ${formatDisplayDate(currentBusinessDate)} is already ${existingRecord.status.toLowerCase()}.`);
+    const alreadyAttempted = existingRecord || attempts[currentBusinessDate]?.includes(type);
+    if (alreadyAttempted) {
+      setError(`${type === 'WORKED_DOUBLE' ? 'Double' : 'Present'} attendance for ${formatDisplayDate(currentBusinessDate)} was already requested.`);
       return;
     }
-    if (type === 'WORKED_DOUBLE' && !todaysRecords.some((item) => item.type === 'PRESENT' && item.status !== 'REJECTED')) {
+    if (type === 'WORKED_DOUBLE' && !todaysRecords.some((item) => item.type === 'PRESENT' && item.status !== 'REJECTED') && !attempts[currentBusinessDate]?.includes('PRESENT')) {
       setError('Present attendance must be requested before double attendance.');
       return;
     }
@@ -55,6 +84,7 @@ export function AttendanceScreen({ user }: { user: AuthUser }) {
         method: 'POST',
         body: JSON.stringify({ employeeId: user.id, attendanceDate: currentBusinessDate, type, status: 'PENDING' }),
       });
+      await rememberAttempt(currentBusinessDate, type);
       await load(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to submit the request.');
@@ -79,8 +109,8 @@ export function AttendanceScreen({ user }: { user: AuthUser }) {
   const todaysRecords = attendance.filter((item) => item.attendanceDate === currentBusinessDate);
   const presentRecord = todaysRecords.find((item) => item.type === 'PRESENT');
   const doubleRecord = todaysRecords.find((item) => item.type === 'WORKED_DOUBLE');
-  const presentRequested = Boolean(presentRecord);
-  const doubleRequested = Boolean(doubleRecord);
+  const presentRequested = Boolean(presentRecord) || attempts[currentBusinessDate]?.includes('PRESENT');
+  const doubleRequested = Boolean(doubleRecord) || attempts[currentBusinessDate]?.includes('WORKED_DOUBLE');
   const doubleAvailable = isCurrentMonth && isDoubleRequestWindow();
   const todaysRequests = attendance.filter(
     (item) => item.attendanceDate === currentBusinessDate
@@ -140,8 +170,8 @@ export function AttendanceScreen({ user }: { user: AuthUser }) {
         <Text style={styles.sectionTitle}>Today’s requests</Text>
         <Text style={styles.sectionHint}>{isCurrentMonth ? `Business date: ${formatDisplayDate(currentBusinessDate)}` : 'Switch to the current month to submit a request.'}</Text>
         <View style={styles.actions}>
-          <AppButton label={presentRequested ? `Present ${presentRecord?.status.toLowerCase()}` : 'Request present'} loading={submitting === 'PRESENT'} disabled={!isCurrentMonth || presentRequested} onPress={() => submit('PRESENT')} style={styles.action} />
-          <AppButton label={doubleRequested ? `Double ${doubleRecord?.status.toLowerCase()}` : doubleAvailable ? 'Request double' : 'Double unavailable'} loading={submitting === 'WORKED_DOUBLE'} disabled={!isCurrentMonth || doubleRequested || !doubleAvailable || !presentRequested} onPress={() => submit('WORKED_DOUBLE')} variant="secondary" style={styles.action} />
+          <AppButton label={presentRequested ? `Present ${presentRecord?.status.toLowerCase() || 'requested'}` : 'Request present'} loading={submitting === 'PRESENT'} disabled={!attemptsLoaded || !isCurrentMonth || presentRequested} onPress={() => submit('PRESENT')} style={styles.action} />
+          <AppButton label={doubleRequested ? `Double ${doubleRecord?.status.toLowerCase() || 'requested'}` : doubleAvailable ? 'Request double' : 'Double unavailable'} loading={submitting === 'WORKED_DOUBLE'} disabled={!attemptsLoaded || !isCurrentMonth || doubleRequested || !doubleAvailable || !presentRequested} onPress={() => submit('WORKED_DOUBLE')} variant="secondary" style={styles.action} />
         </View>
         <Text style={styles.hint}>{doubleAvailable ? 'Double attendance is currently available.' : 'Double attendance is available from 5:00 PM until 2:00 AM.'}</Text>
       </SectionCard>
