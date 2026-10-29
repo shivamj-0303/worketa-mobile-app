@@ -38,9 +38,14 @@ export function AttendanceScreen({ user }: { user: AuthUser }) {
 
   const submit = async (type: 'PRESENT' | 'WORKED_DOUBLE') => {
     if (!isCurrentMonth) return;
-    const todaysRecord = attendance.find((item) => item.attendanceDate === currentBusinessDate);
-    if (todaysRecord) {
-      setError(`Attendance for ${formatDisplayDate(currentBusinessDate)} is already ${todaysRecord.type === 'WORKED_DOUBLE' ? 'double' : todaysRecord.type.toLowerCase()} (${todaysRecord.status.toLowerCase()}). Only one attendance record is allowed per day.`);
+    const todaysRecords = attendance.filter((item) => item.attendanceDate === currentBusinessDate);
+    const existingRecord = todaysRecords.find((item) => item.type === type);
+    if (existingRecord) {
+      setError(`${type === 'WORKED_DOUBLE' ? 'Double' : 'Present'} attendance for ${formatDisplayDate(currentBusinessDate)} is already ${existingRecord.status.toLowerCase()}.`);
+      return;
+    }
+    if (type === 'WORKED_DOUBLE' && !todaysRecords.some((item) => item.type === 'PRESENT' && item.status !== 'REJECTED')) {
+      setError('Present attendance must be requested before double attendance.');
       return;
     }
     try {
@@ -71,9 +76,11 @@ export function AttendanceScreen({ user }: { user: AuthUser }) {
 
   if (loading) return <Screen><LoadingView label="Loading attendance…" /></Screen>;
 
-  const todaysRecord = attendance.find((item) => item.attendanceDate === currentBusinessDate);
-  const presentRequested = todaysRecord?.type === 'PRESENT';
-  const doubleRequested = todaysRecord?.type === 'WORKED_DOUBLE';
+  const todaysRecords = attendance.filter((item) => item.attendanceDate === currentBusinessDate);
+  const presentRecord = todaysRecords.find((item) => item.type === 'PRESENT');
+  const doubleRecord = todaysRecords.find((item) => item.type === 'WORKED_DOUBLE');
+  const presentRequested = Boolean(presentRecord);
+  const doubleRequested = Boolean(doubleRecord);
   const doubleAvailable = isCurrentMonth && isDoubleRequestWindow();
   const todaysRequests = attendance.filter(
     (item) => item.attendanceDate === currentBusinessDate
@@ -133,8 +140,8 @@ export function AttendanceScreen({ user }: { user: AuthUser }) {
         <Text style={styles.sectionTitle}>Today’s requests</Text>
         <Text style={styles.sectionHint}>{isCurrentMonth ? `Business date: ${formatDisplayDate(currentBusinessDate)}` : 'Switch to the current month to submit a request.'}</Text>
         <View style={styles.actions}>
-          <AppButton label={presentRequested ? 'Present recorded' : 'Request present'} loading={submitting === 'PRESENT'} disabled={!isCurrentMonth || Boolean(todaysRecord)} onPress={() => submit('PRESENT')} style={styles.action} />
-          <AppButton label={doubleRequested ? 'Double recorded' : doubleAvailable ? 'Request double' : 'Double unavailable'} loading={submitting === 'WORKED_DOUBLE'} disabled={!isCurrentMonth || Boolean(todaysRecord) || !doubleAvailable} onPress={() => submit('WORKED_DOUBLE')} variant="secondary" style={styles.action} />
+          <AppButton label={presentRequested ? `Present ${presentRecord?.status.toLowerCase()}` : 'Request present'} loading={submitting === 'PRESENT'} disabled={!isCurrentMonth || presentRequested} onPress={() => submit('PRESENT')} style={styles.action} />
+          <AppButton label={doubleRequested ? `Double ${doubleRecord?.status.toLowerCase()}` : doubleAvailable ? 'Request double' : 'Double unavailable'} loading={submitting === 'WORKED_DOUBLE'} disabled={!isCurrentMonth || doubleRequested || !doubleAvailable || !presentRequested} onPress={() => submit('WORKED_DOUBLE')} variant="secondary" style={styles.action} />
         </View>
         <Text style={styles.hint}>{doubleAvailable ? 'Double attendance is currently available.' : 'Double attendance is available from 5:00 PM until 2:00 AM.'}</Text>
       </SectionCard>
