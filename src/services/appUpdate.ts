@@ -1,6 +1,6 @@
 import { Linking } from 'react-native';
 
-const CURRENT_VERSION_CODE = 3;
+const CURRENT_VERSION_CODE = 4;
 const UPDATE_MANIFEST_URL =
   'https://raw.githubusercontent.com/shivamj-0303/worketa-mobile-app/main/update-manifest.json';
 

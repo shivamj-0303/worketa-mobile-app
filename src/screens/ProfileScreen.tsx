@@ -90,7 +90,7 @@ export function ProfileScreen({ user, onLogout }: { user: AuthUser; onLogout: ()
 
       {passwordMessage ? <Text style={styles.success}>{passwordMessage}</Text> : null}
 
-      <AppButton label="Sign out" onPress={logout} variant="danger" />
+      <AppButton label="Log out" onPress={logout} variant="danger" />
 
       <Modal visible={passwordOpen} transparent animationType="slide" onRequestClose={() => setPasswordOpen(false)}>
         <View style={styles.modalBackdrop}>
