@@ -56,9 +56,9 @@ export default function App() {
       <SafeAreaProvider>
         <View style={styles.boot}>
           <Image
-            source={require('./assets/splash-icon.png')}
+            source={require('./assets/worketa-employee-logo.png')}
             style={styles.splashImage}
-            resizeMode="cover"
+            resizeMode="contain"
           />
         </View>
       </SafeAreaProvider>
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   },
 
   splashImage: {
-    width: '100%',
-    height: '100%',
+    width: 220,
+    height: 220,
   },
 });
