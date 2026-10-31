@@ -6,6 +6,8 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { setSessionExpiredHandler } from './src/services/api';
 import { getSession } from './src/services/storage';
 import { AuthUser } from './src/types/api';
+import { checkForRequiredUpdate } from './src/services/appUpdate';
+import { ForceUpdateScreen } from './src/components/ForceUpdateScreen';
 import * as SplashScreen from 'expo-splash-screen';
 
 SplashScreen.preventAutoHideAsync();
@@ -13,6 +15,8 @@ SplashScreen.preventAutoHideAsync();
 export default function App() {
   const [booting, setBooting] = useState(true);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [requiredUpdate, setRequiredUpdate] = useState<Awaited<ReturnType<typeof checkForRequiredUpdate>>>(null);
+  const [updateCheckAttempt, setUpdateCheckAttempt] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -23,19 +27,18 @@ export default function App() {
       }
     });
 
-    getSession()
-      .then((session) => {
+    Promise.all([
+      getSession().catch(() => ({ accessToken: null, refreshToken: null, user: null })),
+      checkForRequiredUpdate(),
+    ])
+      .then(([session, update]) => {
         if (mounted) {
           setUser(
             session.accessToken && session.user
               ? session.user
               : null
           );
-        }
-      })
-      .catch(() => {
-        if (mounted) {
-          setUser(null);
+          setRequiredUpdate(update);
         }
       })
       .finally(async () => {
@@ -49,7 +52,7 @@ export default function App() {
       mounted = false;
       setSessionExpiredHandler(null);
     };
-  }, []);
+  }, [updateCheckAttempt]);
 
   if (booting) {
     return (
@@ -61,6 +64,21 @@ export default function App() {
             resizeMode="contain"
           />
         </View>
+      </SafeAreaProvider>
+    );
+  }
+
+  if (requiredUpdate) {
+    return (
+      <SafeAreaProvider>
+        <ForceUpdateScreen
+          update={requiredUpdate}
+          onRetry={() => {
+            setRequiredUpdate(null);
+            setBooting(true);
+            setUpdateCheckAttempt((attempt) => attempt + 1);
+          }}
+        />
       </SafeAreaProvider>
     );
   }
